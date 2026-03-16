@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dictionary App</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f0e17;--surface:#1a1828;--surface2:#231f35;--border:#2e2a45;--accent:#e8b86d;--accent2:#a78bfa;--text:#ede9fe;--text2:#9ca3af;--green:#34d399;--red:#f87171;--admin:#f59e0b}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 600px 400px at 80% 10%,rgba(167,139,250,.08) 0%,transparent 70%),radial-gradient(ellipse 400px 300px at 10% 80%,rgba(232,184,109,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+  .screen{display:none;position:relative;z-index:1}.screen.active{display:flex}
+  #loginScreen{min-height:100vh;align-items:center;justify-content:center;flex-direction:column}
+  .login-logo{font-family:'Playfair Display',serif;font-size:52px;color:var(--accent);letter-spacing:-1px;margin-bottom:6px}
+  .login-tagline{color:var(--text2);font-size:12px;letter-spacing:3px;text-transform:uppercase;margin-bottom:40px}
+  .login-box{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:40px;width:370px;box-shadow:0 32px 64px rgba(0,0,0,.5)}
+  .login-box h2{font-size:20px;font-weight:600;margin-bottom:26px}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:11px;color:var(--text2);margin-bottom:7px;letter-spacing:.5px;text-transform:uppercase}
+  .field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:.2s}
+  .field input:focus{border-color:var(--accent2)}
+  .hint{font-size:11px;color:var(--text2);margin-top:5px}
+  .hint span{color:var(--accent);cursor:pointer}.hint span:hover{text-decoration:underline}
+  .btn-login{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent2),#7c3aed);border:none;border-radius:10px;color:#fff;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:.15s}
+  .btn-login:hover{opacity:.9;transform:translateY(-1px)}
+  .login-error{color:var(--red);font-size:12px;margin-top:10px;display:none}
+  #appScreen{min-height:100vh;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+  .topbar-logo{font-family:'Playfair Display',serif;font-size:22px;color:var(--accent)}
+  .topbar-right{display:flex;align-items:center;gap:14px}
+  .user-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:5px 14px 5px 7px;font-size:13px}
+  .avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .avatar.admin{background:var(--admin);color:#000}.avatar.guest{background:var(--accent2);color:#fff}
+  .role-label{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600}
+  .role-label.admin{background:rgba(245,158,11,.15);color:var(--admin)}.role-label.guest{background:rgba(167,139,250,.15);color:var(--accent2)}
+  .btn-logout{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:6px 14px;font-family:inherit;font-size:13px;cursor:pointer;transition:.15s}
+  .btn-logout:hover{border-color:var(--red);color:var(--red)}
+  .tabs{display:flex;gap:4px;padding:16px 28px 0;border-bottom:1px solid var(--border);background:var(--surface)}
+  .tab{padding:9px 20px;border-radius:8px 8px 0 0;border:none;background:none;color:var(--text2);font-family:inherit;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+  .tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+  .tab.admin-tab{color:var(--admin)}.tab.admin-tab.active{border-bottom-color:var(--admin)}
+  .content{flex:1;padding:28px;max-width:920px;margin:0 auto;width:100%}
+  .tab-content{display:none}.tab-content.active{display:block}
+  .search-bar{display:flex;gap:10px;margin-bottom:22px}
+  .search-input{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 18px;color:var(--text);font-family:inherit;font-size:15px;outline:none;transition:.2s}
+  .search-input:focus{border-color:var(--accent2)}
+  .btn-search{background:var(--accent2);border:none;border-radius:12px;color:#fff;padding:0 24px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer}
+  .btn-search:hover{opacity:.85}
+  .filter-bar{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+  .filter-chip{padding:6px 15px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;transition:.15s;font-family:inherit}
+  .filter-chip.active{background:var(--accent2);border-color:var(--accent2);color:#fff}
+  .filter-chip:hover:not(.active){border-color:var(--accent2);color:var(--text)}
+  .words-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+  .word-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+  .word-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent));opacity:0;transition:.2s}
+  .word-card:hover{border-color:var(--accent2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+  .word-card:hover::before{opacity:1}
+  .word-title{font-family:'Playfair Display',serif;font-size:22px;color:var(--text);margin-bottom:4px}
+  .word-lang{font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+  .word-def{font-size:13px;color:var(--text2);line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .word-slang{display:inline-block;margin-top:8px;font-size:11px;padding:2px 9px;border-radius:6px;background:rgba(232,184,109,.1);color:var(--accent)}
+  .meanings-count{position:absolute;top:14px;right:14px;font-size:11px;color:var(--text2)}
+  #wordDetail{display:none}
+  .detail-back{display:flex;align-items:center;gap:8px;color:var(--text2);cursor:pointer;font-size:13px;margin-bottom:24px;width:fit-content}
+  .detail-back:hover{color:var(--text)}
+  .detail-word{font-family:'Playfair Display',serif;font-size:52px;color:var(--text);line-height:1.1}
+  .detail-meta{display:flex;align-items:center;gap:12px;margin:12px 0 28px;flex-wrap:wrap}
+  .badge-lang{padding:4px 13px;border-radius:20px;font-size:12px;background:rgba(232,184,109,.1);color:var(--accent);border:1px solid rgba(232,184,109,.2)}
+  .badge-slang{padding:4px 13px;border-radius:20px;font-size:12px;background:rgba(167,139,250,.1);color:var(--accent2);border:1px solid rgba(167,139,250,.2)}
+  .meanings-section h3{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:16px}
+  .meaning-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;border-left:3px solid var(--accent2)}
+  .meaning-pos{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--accent2);margin-bottom:6px}
+  .meaning-def{font-size:15px;color:var(--text);line-height:1.7;margin-bottom:8px}
+  .meaning-ex{font-size:13px;color:var(--text2);font-style:italic;border-left:2px solid var(--border);padding-left:12px}
+  .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+  .admin-header h2{font-size:20px;font-weight:600}
+  .btn-add{background:var(--admin);border:none;border-radius:10px;color:#000;padding:9px 20px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .btn-add:hover{opacity:.85}
+  .admin-table{width:100%;border-collapse:collapse}
+  .admin-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);padding:10px 14px;border-bottom:1px solid var(--border)}
+  .admin-table td{padding:14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:14px;vertical-align:middle}
+  .admin-table tr:hover td{background:var(--surface2)}
+  .btn-edit,.btn-del{border:none;border-radius:7px;padding:5px 13px;font-family:inherit;font-size:12px;cursor:pointer;transition:.15s}
+  .btn-edit{background:rgba(167,139,250,.15);color:var(--accent2)}.btn-del{background:rgba(248,113,113,.12);color:var(--red);margin-left:6px}
+  .btn-edit:hover{background:rgba(167,139,250,.3)}.btn-del:hover{background:rgba(248,113,113,.25)}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px;width:520px;max-width:95vw;max-height:88vh;overflow-y:auto}
+  .modal h3{font-size:18px;margin-bottom:22px}
+  .modal-field{margin-bottom:16px}
+  .modal-field label{display:block;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+  .modal-field input,.modal-field select,.modal-field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:inherit;font-size:14px;outline:none;transition:.2s}
+  .modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{border-color:var(--accent2)}
+  .modal-field textarea{resize:vertical;min-height:80px}
+  .modal-field select option{background:var(--surface2)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}
+  .btn-cancel{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);padding:9px 20px;font-family:inherit;cursor:pointer;font-size:14px}
+  .btn-save{background:var(--accent2);border:none;border-radius:8px;color:#fff;padding:9px 22px;font-family:inherit;font-weight:600;cursor:pointer;font-size:14px}
+  .btn-cancel:hover{border-color:var(--text);color:var(--text)}.btn-save:hover{opacity:.85}
+  .divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+  .section-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+  .toast{position:fixed;bottom:28px;right:28px;z-index:300;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-size:13px;display:flex;align-items:center;gap:10px;transform:translateY(80px);opacity:0;transition:.3s;box-shadow:0 8px 32px rgba(0,0,0,.4);pointer-events:none}
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.success{border-left:3px solid var(--green)}.toast.error{border-left:3px solid var(--red)}
+  .no-result{text-align:center;padding:64px 0;color:var(--text2)}
+  .no-result .icon{font-size:48px;margin-bottom:12px}
+  .guest-lock{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 0;gap:12px}
+  .guest-lock .icon{font-size:52px}
+  .guest-lock p{color:var(--text2);font-size:15px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="screen active">
+  <div style="text-align:center">
+    <div class="login-logo">từ điển</div>
+    <div class="login-tagline">Ứng dụng từ điển đa ngôn ngữ</div>
+    <div class="login-box">
+      <h2>Đăng nhập</h2>
+      <div class="field">
+        <label>Tên đăng nhập</label>
+        <input type="text" id="inputUser" placeholder="Nhập username..." value="admin"/>
+        <div class="hint">Thử: <span onclick="fillLogin('admin','admin123')">admin / admin123</span> &nbsp;|&nbsp; <span onclick="fillLogin('guest','guest123')">guest / guest123</span></div>
+      </div>
+      <div class="field">
+        <label>Mật khẩu</label>
+        <input type="password" id="inputPass" placeholder="••••••••" value="admin123"/>
+      </div>
+      <div class="login-error" id="loginError">❌ Sai tên đăng nhập hoặc mật khẩu!</div>
+      <button class="btn-login" onclick="doLogin()">Đăng nhập →</button>
+    </div>
+  </div>
+</div>
+
+<div id="appScreen" class="screen" style="flex-direction:column">
+  <div class="topbar">
+    <div class="topbar-logo">từ điển</div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div class="avatar" id="topAvatar">A</div>
+        <span id="topUsername">admin</span>
+        <span class="role-label admin" id="topRole">ADMIN</span>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Đăng xuất</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('search',this)">🔍 Tìm kiếm</button>
+    <button class="tab" onclick="switchTab('browse',this)">📖 Duyệt từ</button>
+    <button class="tab admin-tab" id="adminTab" onclick="switchTab('admin',this)">⚙️ Quản lý (Admin)</button>
+  </div>
+  <div class="content">
+    <div class="tab-content active" id="tab-search">
+      <div class="search-bar">
+        <input class="search-input" id="searchInput" placeholder="Tìm từ, nghĩa, slang... (vd: hello, yêu, GOAT)" oninput="doSearch()"/>
+        <button class="btn-search" onclick="doSearch()">Tìm</button>
+      </div>
+      <div class="filter-bar" id="filterBar">
+        <button class="filter-chip active" onclick="setFilter('all',this)">🌐 Tất cả</button>
+        <button class="filter-chip" onclick="setFilter('English',this)">🇬🇧 English</button>
+        <button class="filter-chip" onclick="setFilter('Vietnamese',this)">🇻🇳 Tiếng Việt</button>
+        <button class="filter-chip" onclick="setFilter('French',this)">🇫🇷 Français</button>
+        <button class="filter-chip" onclick="setFilter('Japanese',this)">🇯🇵 日本語</button>
+        <button class="filter-chip" onclick="setFilter('Spanish',this)">🇪🇸 Español</button>
+      </div>
+      <div id="wordDetail">
+        <div class="detail-back" onclick="closeDetail()">← Quay lại kết quả</div>
+        <div id="detailContent"></div>
+      </div>
+      <div id="wordsList"></div>
+    </div>
+    <div class="tab-content" id="tab-browse">
+      <div class="filter-bar" id="browseFilterBar">
+        <button class="filter-chip active" onclick="setBrowseFilter('all',this)">🌐 Tất cả</button>
+        <button class="filter-chip" onclick="setBrowseFilter('English',this)">🇬🇧 English</button>
+        <button class="filter-chip" onclick="setBrowseFilter('Vietnamese',this)">🇻🇳 Tiếng Việt</button>
+        <button class="filter-chip" onclick="setBrowseFilter('French',this)">🇫🇷 Français</button>
+        <button class="filter-chip" onclick="setBrowseFilter('Japanese',this)">🇯🇵 日本語</button>
+        <button class="filter-chip" onclick="setBrowseFilter('Spanish',this)">🇪🇸 Español</button>
+      </div>
+      <div id="browseList" class="words-grid"></div>
+    </div>
+    <div class="tab-content" id="tab-admin">
+      <div id="adminContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Thêm từ mới</h3>
+    <div class="grid2">
+      <div class="modal-field">
+        <label>Từ *</label>
+        <input type="text" id="mWord" placeholder="Nhập từ..."/>
+      </div>
+      <div class="modal-field">
+        <label>Slang / Biệt ngữ</label>
+        <input type="text" id="mSlang" placeholder="vd: GOAT, BFF..."/>
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Ngôn ngữ</label>
+      <select id="mLang">
+        <option>English</option><option>Vietnamese</option><option>French</option>
+        <option>Japanese</option><option>Spanish</option><option>Chinese</option><option>Korean</option>
+      </select>
+    </div>
+    <hr class="divider"/>
+    <div class="section-label">Nghĩa thứ nhất *</div>
+    <div class="modal-field">
+      <label>Từ loại</label>
+      <select id="mPos">
+        <option>noun</option><option>verb</option><option>adjective</option>
+        <option>adverb</option><option>phrase</option><option>interjection</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Định nghĩa *</label>
+      <textarea id="mDef" placeholder="Nhập định nghĩa..."></textarea>
+    </div>
+    <div class="modal-field">
+      <label>Câu ví dụ</label>
+      <input type="text" id="mEx" placeholder="Nhập câu ví dụ..."/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Hủy</button>
+      <button class="btn-save" onclick="saveWord()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const USERS=[{username:'admin',password:'admin123',role:'ADMIN'},{username:'guest',password:'guest123',role:'GUEST'}];
+let words=[
+  {id:'1',word:'Hello',language:'English',slang:'',meanings:[{partOfSpeech:'interjection',definition:'Used as a greeting or to begin a phone conversation.',example:'Hello! How are you today?'},{partOfSpeech:'noun',definition:'An utterance of "hello" as a greeting.',example:'She gave a cheerful hello to everyone.'}]},
+  {id:'2',word:'Serendipity',language:'English',slang:'',meanings:[{partOfSpeech:'noun',definition:'The occurrence of events by chance in a happy or beneficial way.',example:'Finding that rare book was pure serendipity.'}]},
+  {id:'3',word:'Ephemeral',language:'English',slang:'',meanings:[{partOfSpeech:'adjective',definition:'Lasting for a very short time; transitory.',example:'The ephemeral beauty of cherry blossoms lasts only a week.'}]},
+  {id:'4',word:'GOAT',language:'English',slang:'Greatest Of All Time',meanings:[{partOfSpeech:'noun',definition:'Acronym for Greatest Of All Time — the best person ever in a field.',example:'Many fans consider Michael Jordan the GOAT of basketball.'}]},
+  {id:'5',word:'Xin chào',language:'Vietnamese',slang:'',meanings:[{partOfSpeech:'phrase',definition:'Lời chào hỏi lịch sự, phổ biến nhất trong tiếng Việt.',example:'Xin chào, bạn có khỏe không?'}]},
+  {id:'6',word:'Yêu',language:'Vietnamese',slang:'',meanings:[{partOfSpeech:'verb',definition:'Cảm xúc sâu sắc về sự trìu mến và gắn bó với ai đó.',example:'Tôi yêu gia đình tôi hết lòng.'},{partOfSpeech:'adjective',definition:'Đáng yêu, dễ thương, gây thiện cảm.',example:'Em bé đó trông thật yêu!'}]},
+  {id:'7',word:'Hạnh phúc',language:'Vietnamese',slang:'',meanings:[{partOfSpeech:'noun',definition:'Trạng thái vui vẻ, thỏa mãn, cảm thấy mọi thứ đều tốt đẹp.',example:'Hạnh phúc không phải là đích đến mà là hành trình.'},{partOfSpeech:'adjective',definition:'Có cảm giác vui mừng và hài lòng với cuộc sống.',example:'Cô ấy trông rất hạnh phúc hôm nay.'}]},
+  {id:'8',word:'Bonjour',language:'French',slang:'',meanings:[{partOfSpeech:'interjection',definition:'Salutation polie utilisée pour dire bonjour en français.',example:'Bonjour! Comment allez-vous ce matin?'}]},
+  {id:'9',word:'Amour',language:'French',slang:'',meanings:[{partOfSpeech:'noun',definition:"Sentiment d'affection profonde et d'attachement envers quelqu'un.",example:"L'amour est la plus belle des émotions humaines."}]},
+  {id:'10',word:'愛',language:'Japanese',slang:'Ai',meanings:[{partOfSpeech:'noun',definition:'Love — a deep feeling of affection and care.',example:'愛は言葉より行動で示すものだ。'}]},
+  {id:'11',word:'Hola',language:'Spanish',slang:'',meanings:[{partOfSpeech:'interjection',definition:'Saludo informal utilizado en español para decir hola.',example:'¡Hola! ¿Cómo estás hoy?'}]},
+];
+let currentUser=null,currentFilter='all',browseFilter='all',editingId=null;
+
+function fillLogin(u,p){document.getElementById('inputUser').value=u;document.getElementById('inputPass').value=p}
+function doLogin(){
+  const u=document.getElementById('inputUser').value.trim(),p=document.getElementById('inputPass').value;
+  const found=USERS.find(x=>x.username===u&&x.password===p);
+  if(!found){document.getElementById('loginError').style.display='block';return}
+  document.getElementById('loginError').style.display='none';
+  currentUser=found;
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('appScreen').classList.add('active');
+  setupUser();renderWords();renderBrowse();
+  showToast('Chào mừng '+currentUser.username+'! 👋','success');
+}
+function setupUser(){
+  const isAdmin=currentUser.role==='ADMIN';
+  document.getElementById('topUsername').textContent=currentUser.username;
+  document.getElementById('topRole').textContent=currentUser.role;
+  document.getElementById('topRole').className='role-label '+currentUser.role.toLowerCase();
+  const av=document.getElementById('topAvatar');
+  av.textContent=currentUser.username[0].toUpperCase();
+  av.className='avatar '+currentUser.role.toLowerCase();
+  document.getElementById('adminTab').style.display=isAdmin?'':'none';
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+  document.querySelectorAll('.tab-content').forEach((t,i)=>t.classList.toggle('active',i===0));
+  closeDetail();
+}
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if(name==='admin')renderAdmin();
+}
+function setFilter(f,el){
+  currentFilter=f;
+  document.querySelectorAll('#filterBar .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');closeDetail();renderWords();
+}
+function doSearch(){closeDetail();renderWords()}
+function getFiltered(q,lang){
+  return words.filter(w=>{
+    const ml=lang==='all'||w.language===lang;
+    if(!q)return ml;
+    const s=q.toLowerCase();
+    return ml&&(w.word.toLowerCase().includes(s)||(w.slang&&w.slang.toLowerCase().includes(s))||w.meanings.some(m=>m.definition.toLowerCase().includes(s)));
+  });
+}
+function renderWords(){
+  const q=document.getElementById('searchInput').value.trim();
+  const list=getFiltered(q,currentFilter);
+  const el=document.getElementById('wordsList');
+  if(!list.length){el.innerHTML='<div class="no-result"><div class="icon">🔍</div><p>Không tìm thấy từ nào</p></div>';return}
+  el.innerHTML='<div class="words-grid">'+list.map(cardHTML).join('')+'</div>';
+}
+function cardHTML(w){
+  return`<div class="word-card" onclick="showDetail('${w.id}')">
+    <span class="meanings-count">${w.meanings.length} nghĩa</span>
+    <div class="word-title">${w.word}</div>
+    <div class="word-lang">${w.language}</div>
+    <div class="word-def">${w.meanings[0]?.definition||''}</div>
+    ${w.slang?`<span class="word-slang">🗣 ${w.slang}</span>`:''}
+  </div>`;
+}
+function showDetail(id){
+  const w=words.find(x=>x.id===id);if(!w)return;
+  document.getElementById('wordDetail').style.display='block';
+  document.getElementById('wordsList').style.display='none';
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-word">${w.word}</div>
+    <div class="detail-meta">
+      <span class="badge-lang">🌐 ${w.language}</span>
+      ${w.slang?`<span class="badge-slang">🗣 ${w.slang}</span>`:''}
+    </div>
+    <div class="meanings-section">
+      <h3>${w.meanings.length} nghĩa</h3>
+      ${w.meanings.map((m,i)=>`
+        <div class="meaning-item">
+          <div class="meaning-pos">${m.partOfSpeech}</div>
+          <div class="meaning-def">${i+1}. ${m.definition}</div>
+          ${m.example?`<div class="meaning-ex">"${m.example}"</div>`:''}
+        </div>`).join('')}
+    </div>`;
+}
+function closeDetail(){document.getElementById('wordDetail').style.display='none';document.getElementById('wordsList').style.display='block'}
+function setBrowseFilter(f,el){
+  browseFilter=f;
+  document.querySelectorAll('#browseFilterBar .filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');renderBrowse();
+}
+function renderBrowse(){
+  const list=browseFilter==='all'?words:words.filter(w=>w.language===browseFilter);
+  const el=document.getElementById('browseList');
+  if(!list.length){el.innerHTML='<div class="no-result"><div class="icon">📭</div><p>Chưa có từ nào</p></div>';return}
+  el.innerHTML=list.map(cardHTML).join('');
+}
+function renderAdmin(){
+  const el=document.getElementById('adminContent');
+  if(!currentUser||currentUser.role!=='ADMIN'){el.innerHTML='<div class="guest-lock"><div class="icon">🔒</div><p>Chỉ Admin mới có quyền truy cập.</p></div>';return}
+  el.innerHTML=`
+    <div class="admin-header">
+      <h2>Quản lý từ điển <span style="color:var(--text2);font-weight:400;font-size:14px;margin-left:8px">${words.length} từ</span></h2>
+      <button class="btn-add" onclick="openModal()">＋ Thêm từ mới</button>
+    </div>
+    <table class="admin-table">
+      <thead><tr><th>Từ</th><th>Ngôn ngữ</th><th>Slang</th><th>Số nghĩa</th><th>Thao tác</th></tr></thead>
+      <tbody>${words.map(w=>`
+        <tr>
+          <td><strong style="font-family:'Playfair Display',serif;font-size:16px">${w.word}</strong></td>
+          <td><span style="font-size:12px;color:var(--accent)">${w.language}</span></td>
+          <td>${w.slang||'<span style="color:var(--border)">—</span>'}</td>
+          <td>${w.meanings.length}</td>
+          <td>
+            <button class="btn-edit" onclick="openEditModal('${w.id}')">✏️ Sửa</button>
+            <button class="btn-del" onclick="deleteWord('${w.id}')">🗑 Xóa</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+function openModal(){
+  editingId=null;
+  document.getElementById('modalTitle').textContent='Thêm từ mới';
+  ['mWord','mSlang','mDef','mEx'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mLang').value='English';
+  document.getElementById('mPos').value='noun';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('mWord').focus(),100);
+}
+function openEditModal(id){
+  const w=words.find(x=>x.id===id);if(!w)return;
+  editingId=id;
+  document.getElementById('modalTitle').textContent='Sửa từ: '+w.word;
+  document.getElementById('mWord').value=w.word;
+  document.getElementById('mLang').value=w.language;
+  document.getElementById('mSlang').value=w.slang||'';
+  if(w.meanings[0]){
+    document.getElementById('mPos').value=w.meanings[0].partOfSpeech;
+    document.getElementById('mDef').value=w.meanings[0].definition;
+    document.getElementById('mEx').value=w.meanings[0].example||'';
+  }
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open')}
+function saveWord(){
+  const word=document.getElementById('mWord').value.trim();
+  const lang=document.getElementById('mLang').value;
+  const slang=document.getElementById('mSlang').value.trim();
+  const pos=document.getElementById('mPos').value;
+  const def=document.getElementById('mDef').value.trim();
+  const ex=document.getElementById('mEx').value.trim();
+  if(!word){showToast('Vui lòng nhập từ!','error');return}
+  if(!def){showToast('Vui lòng nhập định nghĩa!','error');return}
+  const meaning={partOfSpeech:pos,definition:def,example:ex};
+  if(editingId){
+    const w=words.find(x=>x.id===editingId);
+    w.word=word;w.language=lang;w.slang=slang;
+    if(w.meanings[0])Object.assign(w.meanings[0],meaning);else w.meanings.push(meaning);
+    showToast('Đã cập nhật "'+word+'"!','success');
+  }else{
+    words.unshift({id:Date.now().toString(),word,language:lang,slang,meanings:[meaning]});
+    showToast('Đã thêm "'+word+'" vào từ điển!','success');
+  }
+  closeModal();renderAdmin();renderWords();renderBrowse();
+}
+function deleteWord(id){
+  const w=words.find(x=>x.id===id);if(!w)return;
+  if(!confirm('Xóa từ "'+w.word+'"?'))return;
+  words=words.filter(x=>x.id!==id);
+  renderAdmin();renderWords();renderBrowse();
+  showToast('Đã xóa "'+w.word+'"!','success');
+}
+let toastTimer;
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.innerHTML=(type==='success'?'✅ ':'❌ ')+msg;
+  t.className='toast '+type+' show';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+document.getElementById('inputPass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.getElementById('inputUser').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()});
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal()});
+renderWords();
+</script>
+</body>
+</html>
